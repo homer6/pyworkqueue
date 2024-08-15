@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Find Python
-find_package(Python 3.10.13 REQUIRED COMPONENTS Interpreter Development)
+find_package(Python 3.12.3 REQUIRED COMPONENTS Interpreter Development)
 
 # Check if nanobind is installed
 execute_process(

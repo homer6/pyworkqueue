@@ -13,74 +13,67 @@
 namespace pyworkqueue {
 
 
-    class PyGILState{
-
-            PyGILState_STATE state;
-
-        public:
-            PyGILState() : state(PyGILState_Ensure()) {}
-            ~PyGILState() { PyGILState_Release(state); }
-
-            // Prevent copying
-            PyGILState(const PyGILState&) = delete;
-            PyGILState& operator=(const PyGILState&) = delete;
-    };
-
-
 
     class PyInterpreter {
 
-            PyThreadState* tstate;
+        PyThreadState* tstate;
+        PyInterpreterState* interp_state;
 
-            PyInterpreter(PyThreadState* ts) : tstate(ts) {}
+        PyInterpreter(PyThreadState* ts, PyInterpreterState* is)
+            : tstate(ts), interp_state(is) {}
 
-        public:
-            ~PyInterpreter(){
-                if( tstate ){
-                    cout << "About to end interpreter" << endl;
-                    PyGILState_STATE gstate = PyGILState_Ensure();
-                    PyThreadState_Swap(tstate);
-                    Py_EndInterpreter(tstate);
-                    PyGILState_Release(gstate);
-                    cout << "Finished ending interpreter" << endl;
-                }else{
-                    cout << "Interpreter already ended" << endl;
-                }
+    public:
+        ~PyInterpreter() {
+            if (tstate) {
+                PyThreadState_Swap(tstate);
+                Py_EndInterpreter(tstate);
+                tstate = nullptr;
             }
+        }
 
-            // Prevent copying
-            PyInterpreter(const PyInterpreter&) = delete;
-            PyInterpreter& operator=(const PyInterpreter&) = delete;
+        // Prevent copying
+        PyInterpreter(const PyInterpreter&) = delete;
+        PyInterpreter& operator=(const PyInterpreter&) = delete;
 
-            // Allow moving
-            PyInterpreter(PyInterpreter&& other) noexcept : tstate(other.tstate) {
+        // Allow moving
+        PyInterpreter(PyInterpreter&& other) noexcept
+            : tstate(other.tstate), interp_state(other.interp_state) {
+            other.tstate = nullptr;
+            other.interp_state = nullptr;
+        }
+
+        PyInterpreter& operator=(PyInterpreter&& other) noexcept {
+            if (this != &other) {
+                tstate = other.tstate;
+                interp_state = other.interp_state;
                 other.tstate = nullptr;
+                other.interp_state = nullptr;
             }
-            PyInterpreter& operator=(PyInterpreter&& other) noexcept {
-                if (this != &other) {
-                    tstate = other.tstate;
-                    other.tstate = nullptr;
-                }
-                return *this;
+            return *this;
+        }
+
+        static std::shared_ptr<PyInterpreter> create() {
+            PyInterpreterConfig config;
+            config.gil = PyInterpreterConfig_OWN_GIL; // Create a new GIL for this interpreter
+            config.use_main_obmalloc = 0; // Use a separate memory allocator if needed
+            config.allow_threads = 1;
+
+            PyThreadState* new_ts = nullptr;
+            PyStatus status = Py_NewInterpreterFromConfig(&new_ts, &config);
+
+            if (!new_ts) {
+                throw std::runtime_error("Failed to create new Python interpreter");
             }
 
-            static std::shared_ptr<PyInterpreter> create(){
-                PyGILState gil;
-                PyThreadState* new_ts = Py_NewInterpreter();
-                if (!new_ts) {
-                    throw std::runtime_error("Failed to create new Python interpreter");
-                }
-                return std::shared_ptr<PyInterpreter>(new PyInterpreter(new_ts), );
-            }
+            return std::shared_ptr<PyInterpreter>(new PyInterpreter(new_ts, new_ts->interp));
+        }
 
-            void run_code(const std::string& code) {
-                PyGILState gil;
-                PyRun_SimpleString(code.c_str());
-            }
-
+        void run_code(const std::string& code) {
+            PyThreadState* save_tstate = PyThreadState_Swap(tstate);
+            PyRun_SimpleString(code.c_str());
+            PyThreadState_Swap(save_tstate);
+        }
     };
-
-
 
 
 
