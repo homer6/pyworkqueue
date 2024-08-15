@@ -3,7 +3,17 @@
 #include <memory>
 using std::shared_ptr;
 
+#include <csignal>
+
+#include <iostream>
+using std::cout;
+using std::cerr;
+using std::endl;
+
+
 #include "PythonEnvironment.h"
+
+
 
 
 namespace pyworkqueue {
@@ -12,7 +22,7 @@ namespace pyworkqueue {
 
         public:
             PyWorkQueueApp( int argc, char** argv );
-            void run();
+            int run();
 
 
             //runs in own thread
@@ -20,7 +30,7 @@ namespace pyworkqueue {
                 
                 try{
                     interpreter->run_code("import sys");
-                    interpreter->run_code("print('Python version:', sys.version)");
+                    interpreter->run_code("print('Python version:', sys.version)");                    
                 }catch( std::exception& e ){
                     std::cerr << "Error running Python code: " << e.what() << std::endl;
                     //return exception to main thread
@@ -29,9 +39,12 @@ namespace pyworkqueue {
                     //return exception to main thread                    
                 }
 
+                cout << "Exiting interpreter thread: " << std::this_thread::get_id() << endl;
+
             }
 
             void callSignalHandler( int signal ){
+                cout << "Stopping app due to signal: " << signal << endl;
                 should_stop.store(true);
             }
 

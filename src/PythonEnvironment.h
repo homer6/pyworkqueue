@@ -35,10 +35,16 @@ namespace pyworkqueue {
             PyInterpreter(PyThreadState* ts) : tstate(ts) {}
 
         public:
-            ~PyInterpreter() {
-                if (tstate) {
+            ~PyInterpreter(){
+                if( tstate ){
+                    cout << "About to end interpreter" << endl;
+                    PyGILState_STATE gstate = PyGILState_Ensure();
                     PyThreadState_Swap(tstate);
                     Py_EndInterpreter(tstate);
+                    PyGILState_Release(gstate);
+                    cout << "Finished ending interpreter" << endl;
+                }else{
+                    cout << "Interpreter already ended" << endl;
                 }
             }
 
@@ -58,12 +64,13 @@ namespace pyworkqueue {
                 return *this;
             }
 
-            static std::shared_ptr<PyInterpreter> create() {
+            static std::shared_ptr<PyInterpreter> create(){
+                PyGILState gil;
                 PyThreadState* new_ts = Py_NewInterpreter();
                 if (!new_ts) {
                     throw std::runtime_error("Failed to create new Python interpreter");
                 }
-                return std::shared_ptr<PyInterpreter>(new PyInterpreter(new_ts));
+                return std::shared_ptr<PyInterpreter>(new PyInterpreter(new_ts), );
             }
 
             void run_code(const std::string& code) {

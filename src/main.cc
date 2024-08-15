@@ -21,8 +21,6 @@ int main( int argc, char** argv ){
     std::signal(SIGINT, PyWorkQueueApp::signalHandler);
     std::signal(SIGTERM, PyWorkQueueApp::signalHandler);
     
-    app.run();
-   
-    return 0;
+    return app.run();
 
 }
