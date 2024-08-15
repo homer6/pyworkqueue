@@ -26,7 +26,7 @@ namespace pyworkqueue {
 
 
             //runs in own thread
-            void runInterpreter( std::shared_ptr<PyInterpreter> interpreter ) noexcept{
+            void runInterpreter( std::shared_ptr<PythonInterpreter> interpreter ) noexcept{
                 
                 try{
                     interpreter->run_code("import sys");

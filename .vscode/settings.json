@@ -3,6 +3,8 @@
         "chrono": "cpp",
         "ostream": "cpp",
         "thread": "cpp",
-        "iostream": "cpp"
+        "iostream": "cpp",
+        "stdexcept": "cpp",
+        "new": "cpp"
     }
 }

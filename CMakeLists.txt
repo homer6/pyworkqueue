@@ -54,7 +54,7 @@ set_target_properties(pyworkqueue PROPERTIES
 )
 
 # Ensure proper flags for embedding Python
-if(UNIX)
+if(UNIX AND NOT APPLE)
     target_link_options(pyworkqueue PRIVATE "LINKER:--no-as-needed")
 endif()
 

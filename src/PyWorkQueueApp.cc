@@ -24,11 +24,11 @@ namespace pyworkqueue {
 
         {
 
-            std::vector<std::shared_ptr<PyInterpreter>> interpreters;
+            std::vector<std::shared_ptr<PythonInterpreter>> interpreters;
             std::vector<std::thread> threads;
             
             for( int i = 0; i < num_interpreters; i++ ){
-                interpreters.push_back(PyInterpreter::create());
+                interpreters.push_back(PythonInterpreter::create());
                 threads.emplace_back(&PyWorkQueueApp::runInterpreter, this, interpreters.back());
             }
 
