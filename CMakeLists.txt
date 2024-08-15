@@ -36,6 +36,7 @@ include_directories(src ${NANOBIND_INCLUDE_DIR})
 
 # Add your source files here
 set(SOURCES
+    src/PyWorkQueueApp.cc
     src/main.cc
 )
 

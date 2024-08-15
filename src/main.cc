@@ -1,10 +1,28 @@
-#include <Python.h>
+#include <csignal>
+#include <iostream>
+#include <thread>
+#include <vector>
+#include <atomic>
+#include <memory>
+#include <stdexcept>
 
-int main() {
-    Py_Initialize();
+#include "PyWorkQueueApp.h"
+using pyworkqueue::PyWorkQueueApp;
 
-    PyRun_SimpleString("print('Hello from Python!')");
 
-    Py_Finalize();
+PyWorkQueueApp* PyWorkQueueApp::app_instance = nullptr;
+
+
+int main( int argc, char** argv ){
+
+    PyWorkQueueApp app(argc, argv);
+    PyWorkQueueApp::app_instance = &app;
+
+    std::signal(SIGINT, PyWorkQueueApp::signalHandler);
+    std::signal(SIGTERM, PyWorkQueueApp::signalHandler);
+    
+    app.run();
+   
     return 0;
+
 }
