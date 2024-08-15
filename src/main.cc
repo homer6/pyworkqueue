@@ -25,55 +25,56 @@
 
 // }
 
-
 #include <Python.h>
 #include <stdio.h>
 
-const char* python_code = 
-    "import sys\n"
-    "print(f'Hello from subinterpreter {id(sys)}!')\n"
-    "x = 42\n"
-    "print(f'The value of x is {x}')\n";
+const char* check_gil_code = 
+    "import sys, threading\n"
+    "print(f'Interpreter ID: {id(sys)}')\n"
+    "print(f'Thread ID: {threading.get_native_id()}')\n"
+    "print(f'Has GIL: {sys.is_finalizing() == False}')\n";
 
 int main() {
     PyStatus status;
     PyConfig config;
     PyThreadState *mainThreadState, *subThreadState;
 
-    printf("Initializing Python...\n");
     PyConfig_InitPythonConfig(&config);
     status = Py_InitializeFromConfig(&config);
     if (PyStatus_Exception(status)) {
         printf("Failed to initialize Python\n");
         return 1;
     }
-    printf("Python initialized successfully\n");
 
     mainThreadState = PyThreadState_Get();
 
     for (int i = 0; i < 4; i++) {
         printf("Creating subinterpreter %d...\n", i+1);
-        subThreadState = Py_NewInterpreter();
-        if (subThreadState == NULL) {
+
+        PyInterpreterConfig interp_config = {
+            .use_main_obmalloc = 0,
+            .allow_fork = 0,
+            .allow_exec = 0,
+            .allow_threads = 1,
+            .allow_daemon_threads = 0,
+            .check_multi_interp_extensions = 1,
+            .gil = PyInterpreterConfig_OWN_GIL
+        };
+
+        status = Py_NewInterpreterFromConfig(&subThreadState, &interp_config);
+        if (PyStatus_Exception(status)) {
             fprintf(stderr, "Failed to create subinterpreter %d\n", i+1);
             Py_Finalize();
             return 1;
         }
-        printf("Subinterpreter %d created successfully\n", i+1);
 
-        printf("Running Python code in subinterpreter %d...\n", i+1);
-        PyRun_SimpleString(python_code);
-        printf("Python code execution completed in subinterpreter %d\n", i+1);
+        printf("Running GIL check in subinterpreter %d...\n", i+1);
+        PyRun_SimpleString(check_gil_code);
 
-        printf("Ending subinterpreter %d...\n", i+1);
         Py_EndInterpreter(subThreadState);
-        printf("Subinterpreter %d ended\n", i+1);
-
         PyThreadState_Swap(mainThreadState);
     }
 
-    printf("Finalizing Python...\n");
     Py_Finalize();
-    printf("Python finalized successfully\n");
     return 0;
 }
