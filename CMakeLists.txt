@@ -8,6 +8,19 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Find Python
 find_package(Python 3.10.13 REQUIRED COMPONENTS Interpreter Development)
 
+# Check if nanobind is installed
+execute_process(
+    COMMAND "${Python_EXECUTABLE}" -c "import nanobind"
+    RESULT_VARIABLE NANOBIND_IMPORT_RESULT
+    OUTPUT_QUIET ERROR_QUIET
+)
+
+if(NOT NANOBIND_IMPORT_RESULT EQUAL 0)
+    message(FATAL_ERROR "nanobind is not installed. Please install it using:\n"
+                        "  ${Python_EXECUTABLE} -m pip install nanobind\n"
+                        "Then, delete the CMakeCache.txt file and run CMake again.")
+endif()
+
 # Find nanobind
 execute_process(
     COMMAND "${Python_EXECUTABLE}" -m nanobind --cmake_dir
@@ -18,7 +31,6 @@ list(APPEND CMAKE_PREFIX_PATH "${NB_DIR}")
 find_package(nanobind CONFIG REQUIRED)
 
 # Add executable
-
 include_directories(src)
 
 # Add your source files here
@@ -27,7 +39,6 @@ set(SOURCES
 )
 
 add_executable(pyworkqueue ${SOURCES})
-
 
 # Link against nanobind and Python
 target_link_libraries(pyworkqueue PRIVATE nanobind::nanobind Python::Python)
