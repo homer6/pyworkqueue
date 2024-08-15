@@ -39,13 +39,16 @@ namespace pyworkqueue {
             }
 
             // Ensure all threads exit
+            x = 0;
             for( auto& thread : threads ){
+                cout << "Joining thread " << ++x << endl;
                 if( thread.joinable() ){
                     thread.join();
                     cout << "Thread joined successfully." << endl;
                 }else{
                     cerr << "Thread was not joinable." << endl;
                 }
+                cout << "Thread joined: " << x << endl;
             }
 
             cout << "About to destroy threads." << endl;

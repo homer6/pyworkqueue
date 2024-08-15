@@ -92,28 +92,44 @@ If this is PyInterpreterConfig_OWN_GIL then PyInterpreterConfig.use_main_obmallo
         PythonInterpreter( PythonInterpreterConfig& config )
             :thread_state(nullptr), interpreter_state(nullptr)
         {
-            this->interpreter_state = PyInterpreterState_New();
-            if( !this->interpreter_state ){
-                throw std::runtime_error("Failed to create new Python interpreter state");
-            }
+            cout << 1 << endl;
+            // this->interpreter_state = PyInterpreterState_New();
+            // if( !this->interpreter_state ){
+            //     throw std::runtime_error("Failed to create new Python interpreter state");
+            // }
+
+            cout << 2 << endl;
 
             PyStatus status = Py_NewInterpreterFromConfig(&this->thread_state, &config);
-            if( !this->thread_state ){ 
-                throw std::runtime_error("Failed to create new Python interpreter thread state");
+            if( PyStatus_Exception(status) ){
+                throw std::runtime_error("Failed to create new Python interpreter from config");
             }
+
+            if( !this->thread_state ){
+                throw std::runtime_error("Failed to create new Python thread state");
+            }
+
+            cout << 3 << endl;
 
         }
 
     public:
         // https://docs.python.org/3/c-api/init.html#c.PyInterpreterState_New
 
-        ~PythonInterpreter() {
+        ~PythonInterpreter(){
+            cout << "Destroying PythonInterpreter" << endl;
             if( this->thread_state ){
+                cout << "Destroying PythonInterpreter thread state" << endl;
                 PyThreadState_Swap(this->thread_state);
+
+                cout << "Destroying PythonInterpreter interpreter state" << endl;
                 Py_EndInterpreter(this->thread_state);
+
                 this->thread_state = nullptr;
                 this->interpreter_state = nullptr;
+                cout << "Destroyed PythonInterpreter (inner)" << endl;
             }
+            cout << "Destroyed PythonInterpreter (outer)" << endl;
         }
 
         // Prevent copying
