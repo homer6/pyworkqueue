@@ -10,9 +10,11 @@ find_package(Python 3.10.13 REQUIRED COMPONENTS Interpreter Development)
 
 # Check if nanobind is installed
 execute_process(
-    COMMAND "${Python_EXECUTABLE}" -c "import nanobind"
+    COMMAND "${Python_EXECUTABLE}" -c "import nanobind; print(nanobind.__file__)"
     RESULT_VARIABLE NANOBIND_IMPORT_RESULT
-    OUTPUT_QUIET ERROR_QUIET
+    OUTPUT_VARIABLE NANOBIND_PATH
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    ERROR_QUIET
 )
 
 if(NOT NANOBIND_IMPORT_RESULT EQUAL 0)
@@ -21,17 +23,16 @@ if(NOT NANOBIND_IMPORT_RESULT EQUAL 0)
                         "Then, delete the CMakeCache.txt file and run CMake again.")
 endif()
 
-# Find nanobind
-execute_process(
-    COMMAND "${Python_EXECUTABLE}" -m nanobind --cmake_dir
-    OUTPUT_VARIABLE NB_DIR
-    OUTPUT_STRIP_TRAILING_WHITESPACE COMMAND_ECHO STDOUT
-)
-list(APPEND CMAKE_PREFIX_PATH "${NB_DIR}")
-find_package(nanobind CONFIG REQUIRED)
+# Get nanobind include directory
+get_filename_component(NANOBIND_DIR ${NANOBIND_PATH} DIRECTORY)
+set(NANOBIND_INCLUDE_DIR "${NANOBIND_DIR}/include")
+
+if(NOT EXISTS "${NANOBIND_INCLUDE_DIR}/nanobind/nanobind.h")
+    message(FATAL_ERROR "Cannot find nanobind.h in ${NANOBIND_INCLUDE_DIR}")
+endif()
 
 # Add executable
-include_directories(src)
+include_directories(src ${NANOBIND_INCLUDE_DIR})
 
 # Add your source files here
 set(SOURCES
@@ -40,8 +41,8 @@ set(SOURCES
 
 add_executable(pyworkqueue ${SOURCES})
 
-# Link against nanobind and Python
-target_link_libraries(pyworkqueue PRIVATE nanobind::nanobind Python::Python)
+# Link against Python
+target_link_libraries(pyworkqueue PRIVATE Python::Python)
 
 # Include directories
 target_include_directories(pyworkqueue PRIVATE ${Python_INCLUDE_DIRS})
